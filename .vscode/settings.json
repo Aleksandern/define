@@ -1,0 +1,46 @@
+{
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "typescript.preferences.quoteStyle": "single",
+  "search.exclude": {
+    "**/.git": true,
+    "**/node_modules": true,
+    "node_modules": true,
+    "**/bower_components": true,
+    "**/tmp": true
+  },
+  "search.followSymlinks": false,
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "editor.formatOnSave": false,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "eslint.codeActionsOnSave.rules": [
+    "simple-import-sort/imports",
+    "modules-newlines/import-declaration-newline",
+    "@stylistic/comma-dangle"
+  ],
+  "eslint.codeActionsOnSave.mode": "problems",
+  "scss.lint.unknownAtRules": "ignore",
+  "eslint.useFlatConfig": true,
+  "tailwindCSS.classAttributes": [
+    "className",
+    "cellClassName",
+    "className.*",
+    "theme"
+  ],
+  "tailwindCSS.experimental.classRegex": [
+    [
+      "twMerge\\(([^)]*)\\)",
+      "[\"'`]([^\"'`]*).*?[\"'`]"
+    ],
+    [
+      "createTheme(?:<\\w+>)?\\s*\\(([^)]*)\\)",
+      "{?\\s?[\\w].*:\\s*?[\"'`]([^\"'`]*).*?,?\\s?}?"
+    ]
+  ]
+}

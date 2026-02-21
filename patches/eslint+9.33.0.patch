@@ -1,0 +1,17 @@
+diff --git a/node_modules/eslint/lib/rules/padding-line-between-statements.js b/node_modules/eslint/lib/rules/padding-line-between-statements.js
+index 9d6a563..b772cd1 100644
+--- a/node_modules/eslint/lib/rules/padding-line-between-statements.js
++++ b/node_modules/eslint/lib/rules/padding-line-between-statements.js
+@@ -349,6 +349,12 @@ const StatementTypes = {
+ 			!astUtils.isDirective(node),
+ 	},
+ 
++        "multi-case": {
++            test: node =>
++                node.type === "SwitchCase" &&
++                node.consequent.length === 0
++        },
++
+ 	"multiline-const": newMultilineKeywordTester("const"),
+ 	"multiline-let": newMultilineKeywordTester("let"),
+ 	"multiline-var": newMultilineKeywordTester("var"),

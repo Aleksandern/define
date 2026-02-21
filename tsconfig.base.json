@@ -16,6 +16,12 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "es2022",
-    "customConditions": ["@define/source"]
+    "customConditions": ["@define/source"],
+
+    "strictPropertyInitialization": false,
+
+    "paths": {
+      "@appApi/*": ["./apps/api/src/*"]
+    }
   }
 }

@@ -1,0 +1,47 @@
+{
+  "name": "@define/common",
+  "version": "0.0.1",
+  "private": true,
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./types": {
+      "types": "./src/types/index.ts",
+      "import": "./src/types/index.ts",
+      "default": "./src/types/index.ts"
+    },
+    "./configs": {
+      "types": "./src/configs/index.ts",
+      "import": "./src/configs/index.ts",
+      "default": "./src/configs/index.ts"
+    },
+    "./utils": {
+      "types": "./src/utils/index.ts",
+      "import": "./src/utils/index.ts",
+      "default": "./src/utils/index.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "nx": {
+    "targets": {
+      "ts-check": {
+        "executor": "nx:run-commands",
+        "options": {
+          "commands": ["tsc -p tsconfig.lib.json --noEmit --pretty"],
+          "cwd": "libs/common",
+          "forwardAllArgs": false
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  }
+}

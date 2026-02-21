@@ -1,5 +1,15 @@
-import baseConfig from "../../eslint.config.mjs";
+import { defineConfig } from 'eslint/config';
 
-export default [
-    ...baseConfig
-];
+import baseConfig from "../../eslint.backend.config.mjs";
+
+export default defineConfig([
+    ...baseConfig,
+    {
+        languageOptions: {
+          parserOptions: {
+            projectService: true,
+            tsconfigRootDir: import.meta.dirname
+          },
+        },
+    },
+]);

@@ -19,6 +19,11 @@
       "{workspaceRoot}/.github/workflows/ci.yml"
     ]
   },
+  "sync": {
+    "disabledTaskSyncGenerators": [
+      "@nx/js:typescript-sync"
+    ]
+  },
   "plugins": [
     {
       "plugin": "@nx/js/typescript",

@@ -4,6 +4,12 @@
   "private": true,
   "nx": {
     "targets": {
+      "ts-check": {
+        "executor": "nx:run-commands",
+        "options": {
+          "commands": ["tsc -b && tsc -p {projectRoot}/tsconfig.app.json --noEmit --pretty"]
+        }
+      },
       "build": {
         "executor": "nx:run-commands",
         "options": {
