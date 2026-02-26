@@ -49,6 +49,7 @@
     "git-commit-msg-linter": "^5.0.8",
     "mongoose": "^9.2.2",
     "mongoose-aggregate-paginate-v2": "^1.1.4",
+    "p-limit": "^7.3.0",
     "patch-package": "^8.0.1",
     "postinstall-postinstall": "^2.1.0",
     "reflect-metadata": "^0.1.13",

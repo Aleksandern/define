@@ -3,8 +3,6 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import {
-  Cron,
-  CronExpression,
   Timeout,
 } from '@nestjs/schedule';
 
@@ -13,10 +11,11 @@ import type {
   AggregatePaginateModel,
   AnyBulkWriteOperation,
 } from 'mongoose';
+import pLimit from 'p-limit';
 
+import { ChainsRpcDisableReasonP } from '@define/common/types';
 import {
   dateTimeUtils,
-  generalUtils,
 } from '@define/common/utils';
 
 import { LoggerService } from '@appApi/services/logger.service';
@@ -28,20 +27,36 @@ import {
   ChainsRpcDocument,
 } from '../schemas';
 
-interface ChainidNetworkEntry {
-  name?: string,
-  chain?: string,
-  chainId: number,
-  networkId?: number,
-  shortName?: string,
-  infoURL?: string,
-  rpc?: string[],
-  faucets?: string[],
-  nativeCurrency?: { name?: string; symbol?: string; decimals?: number },
-  explorers?: { name?: string; url?: string; standard?: string }[],
-}
-
 interface JsonRpcResp<T> { jsonrpc: '2.0'; id: number; result?: T; error?: any }
+
+/**
+ * TODO:
+ *
+ * - priority-based RPC sorting (primary → fallback → public)
+ *
+ * Idea: not all RPCs are equal.
+ * primary: paid/private (Alchemy/Infura) — the most reliable
+ * fallback: backup (a second provider or the best public one)
+ * public: from chainid/chainlist — the most unstable
+ *
+ * When selecting an RPC for operation, you should use:
+ * healthy primary
+ * if none — healthy fallback
+ * if none — public
+ *
+ * And within each group, sort by:
+ * healthy=true
+ * lower latencyMs
+ * higher weight
+ *
+ * - Adaptive cooldown (exponential backoff)
+ * 1st error → cooldown 30s
+ * 2nd error → cooldown 2m
+ * 3rd error → cooldown 10m
+ * 4th error → cooldown 1h
+ *
+ * - RpcPool on top of Mongo
+ */
 
 @Injectable()
 export class ChainsRpcsHealthCron {
@@ -56,18 +71,18 @@ export class ChainsRpcsHealthCron {
     http,
     url,
     method,
-    params,
+    params = [],
   }: {
     http: ReturnType<typeof axios.create>,
     url: string,
     method: string,
-    params: any[],
+    params?: any[],
   }): Promise<T> {
     const payload = {
       jsonrpc: '2.0',
       id: 1,
       method,
-      params,
+      params, // required by nodes even if it's empty
     };
 
     const res = await http.post<JsonRpcResp<T>>(url, payload);
@@ -89,18 +104,20 @@ export class ChainsRpcsHealthCron {
   }
 
   async runHealthCheck() {
-    console.log('!!!health check', { });
-
-    const dateNow = dateTimeUtils.getLib().toDate();
+    const dateNowLib = dateTimeUtils.getLib();
+    const dateNow = dateNowLib.clone().toDate();
+    const dateNowMs = dateNow.getTime();
 
     const rpcs = await this.chainsRpcModel
       .find({
         $or: [{ cooldownUntil: { $exists: false } }, { cooldownUntil: { $lte: dateNow } }],
       })
+      .sort({
+        isHealthy: 1,
+        lastCheckedAt: 1,
+      })
       .limit(200)
       .lean();
-
-    console.log('!!!', { rpcs });
 
     if (rpcs.length === 0) {
       return;
@@ -108,7 +125,6 @@ export class ChainsRpcsHealthCron {
 
     // collect unique chain ObjectId
     const chainObjectIds = Array.from(new Set(rpcs.map((r) => String(r.chainId))));
-    console.log('[ !!!chainObjectIds ]', chainObjectIds);
 
     const chainsInfo = await this.chainModel
       .find({ _id: { $in: chainObjectIds } })
@@ -126,8 +142,6 @@ export class ChainsRpcsHealthCron {
         name: c.name,
       });
     });
-
-    console.log('!!!', { chainsInfo });
 
     // axios instance
     const http = axios.create({
@@ -154,12 +168,11 @@ export class ChainsRpcsHealthCron {
       const start = Date.now();
 
       try {
-        // eth_chainId
+        // eth_chainId (check if correct chainId)
         const chainIdHex = await this.jsonRpc<string>({
           http,
           url: rpcDoc.url,
           method: 'eth_chainId',
-          params: [],
         });
         const gotChainId = parseInt(chainIdHex, 16);
 
@@ -167,15 +180,14 @@ export class ChainsRpcsHealthCron {
           throw new Error(`Invalid eth_chainId: ${chainIdHex}`);
         }
         if (gotChainId !== chainInfo.chainIdOrig) {
-          throw new Error(`ChainId mismatch expected=${chainInfo.chainIdOrig} got=${gotChainId}`);
+          throw new Error(`CHAIN_MISMATCH expected=${chainInfo.chainIdOrig} got=${gotChainId}`);
         }
 
-        // eth_blockNumber (is it alive)
+        // eth_blockNumber (check if it is alive)
         await this.jsonRpc<string>({
           http,
           url: rpcDoc.url,
           method: 'eth_blockNumber',
-          params: [],
         });
 
         const latencyMs = Date.now() - start;
@@ -193,15 +205,72 @@ export class ChainsRpcsHealthCron {
 
     // 4) limit concurrency
     const concurrency = 10;
-    const results: any[] = [];
+    const limit = pLimit(concurrency);
+    const promises = rpcs.map((rpc) => (
+      limit(() => checkOne(rpc))
+    ));
+    const results = await Promise.all(promises);
 
-    for (let i = 0; i < rpcs.length; i += concurrency) {
-      const chunk = rpcs.slice(i, i + concurrency);
-      // eslint-disable-next-line no-await-in-loop
-      const out = await Promise.all(chunk.map(checkOne));
-      results.push(...out);
-    }
+    // 5) bulk update results
+    const coolDownMs = 60_000;
 
-    console.log('!!!', { results });
+    const ops = results.map<AnyBulkWriteOperation<ChainsRpcDocument>>((item) => {
+      if (item.isSuccess) {
+        return {
+          updateOne: {
+            filter: {
+              _id: item.chainsRpcId,
+            },
+            update: {
+              $set: {
+                isHealthy: true,
+                latencyMs: item.latencyMs,
+                lastCheckedAt: dateNow,
+                failCount: 0,
+              },
+              $unset: {
+                cooldownUntil: '',
+                lastError: '',
+              },
+            },
+          },
+        };
+      }
+
+      const isWrongChain = item.error.startsWith('CHAIN_MISMATCH');
+
+      return {
+        updateOne: {
+          filter: {
+            _id: item.chainsRpcId,
+          },
+          update: {
+            $set: {
+              isHealthy: false,
+              isDisabled: isWrongChain,
+              disabledReason: isWrongChain ? ChainsRpcDisableReasonP.wrongChain : undefined,
+              lastCheckedAt: dateNow,
+              lastError: item.error,
+              cooldownUntil: new Date(dateNowMs + coolDownMs),
+            },
+            $inc: { failCount: 1 },
+          },
+        },
+      };
+    });
+
+    await this.chainsRpcModel.bulkWrite(ops, { ordered: false });
+
+    const ok = results.filter((r) => r.isSuccess).length;
+    const bad = (results.length - ok);
+
+    this.logger.log({
+      message: 'RPC health-check done',
+      data: {
+        checked: results.length,
+        ok,
+        bad,
+      },
+    });
   }
 }

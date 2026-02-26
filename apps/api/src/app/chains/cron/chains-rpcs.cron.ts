@@ -84,7 +84,10 @@ export class ChainsRpcsCron {
         return;
       }
 
-      if (index >= 3) {
+      if (
+        (index >= 3)
+        && (item.chainId !== 137)
+      ) {
         return;
       }
 
@@ -168,7 +171,10 @@ export class ChainsRpcsCron {
         return;
       }
 
-      if (index >= 3) {
+      if (
+        (index >= 3)
+        && (item.chainId !== 137)
+      ) {
         return;
       }
 

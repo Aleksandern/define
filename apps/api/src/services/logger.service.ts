@@ -6,8 +6,14 @@ import {
 
 @Injectable()
 export class LoggerService extends Logger implements LoggerServiceOrig {
-  override log(message: string) {
-    super.log(message);
+  override log({
+    message,
+    data,
+  }: {
+    message: string,
+    data: Parameters<LoggerServiceOrig['log']>[1],
+  }) {
+    super.log(message, data);
   }
 
   override error({

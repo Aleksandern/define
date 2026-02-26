@@ -3,14 +3,14 @@ import {
 } from 'mongoose';
 
 export class ChainsAggregate {
-  static relations() {
+  relations() {
     const res: PipelineStage[] = [
     ];
 
     return res;
   }
 
-  static relationsPipeline(...data: Parameters<typeof this.relations>) {
-    return ChainsAggregate.relations(...data) as unknown as NonNullable<PipelineStage.Lookup['$lookup']['pipeline']>;
+  relationsPipeline(...data: Parameters<typeof this.relations>) {
+    return this.relations(...data) as unknown as NonNullable<PipelineStage.Lookup['$lookup']['pipeline']>;
   }
 }

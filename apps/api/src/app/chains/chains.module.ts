@@ -3,7 +3,10 @@ import {
 } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
-import { ChainsController } from './controllers';
+import {
+  ChainsController,
+  ChainsRpcsController,
+} from './controllers';
 import {
   ChainsRpcsCron,
   ChainsRpcsHealthCron,
@@ -14,16 +17,21 @@ import {
   ChainsRpc,
   ChainsRpcSchema,
 } from './schemas';
-import { ChainsService } from './services';
+import {
+  ChainsRpcsService,
+  ChainsService,
+} from './services';
 
 @Module({
   providers: [
     ChainsService,
+    ChainsRpcsService,
     ChainsRpcsCron,
     ChainsRpcsHealthCron,
   ],
   controllers: [
     ChainsController,
+    ChainsRpcsController,
   ],
   imports: [
     MongooseModule.forFeature([
@@ -39,6 +47,7 @@ import { ChainsService } from './services';
   ],
   exports: [
     ChainsService,
+    ChainsRpcsService,
     MongooseModule,
   ],
 })

@@ -2,7 +2,9 @@ import type {
   Express as _Express,
   Request as RequestOrig,
 } from 'express';
+import type { RootFilterOperators } from 'mongodb';
 import {
+  QueryFilter,
   SchemaTimestampsConfig as SchemaTimestampsConfigOrig,
 } from 'mongoose';
 
@@ -24,6 +26,10 @@ export interface Request extends RequestOrig {
 export interface RequestHeadersT {
   'x-timezone'?: string,
 }
+
+export type RootFilterOperatorsT<T> = RootFilterOperators<T>;
+
+export type QueryFilterT<T> = QueryFilter<T>;
 
 export type AggrRelationOptionsT<T = undefined> = {
   show?: boolean,
