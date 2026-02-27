@@ -1,7 +1,11 @@
 import {
+  forwardRef,
   Module,
 } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+
+// eslint-disable-next-line import-x/no-cycle
+import { RpcModule } from '@appApi/app/rpc/rpc.module';
 
 import {
   ChainsController,
@@ -34,6 +38,7 @@ import {
     ChainsRpcsController,
   ],
   imports: [
+    forwardRef(() => RpcModule),
     MongooseModule.forFeature([
       {
         name: Chain.name,

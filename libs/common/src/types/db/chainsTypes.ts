@@ -10,6 +10,12 @@ export interface ChainT<SRV extends boolean = false> {
   name: string,
   nameShort: string,
   infoUrl: string,
+  isDisabled?: boolean,
+  nativeCurrency: {
+    name: string,
+    symbol: string,
+    decimals: number,
+  },
 }
 
 export type ChainSrvT = ChainT<true>;

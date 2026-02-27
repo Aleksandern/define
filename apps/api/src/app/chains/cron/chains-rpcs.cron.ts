@@ -49,7 +49,7 @@ export class ChainsRpcsCron {
     @InjectModel(ChainsRpc.name) private chainsRpcModel: AggregatePaginateModel<ChainsRpcDocument>,
   ) {}
 
-  @Timeout(1000)
+  // @Timeout(1000)
   async startup() {
     await this.fetchChain();
   }
@@ -84,12 +84,12 @@ export class ChainsRpcsCron {
         return;
       }
 
-      if (
-        (index >= 3)
-        && (item.chainId !== 137)
-      ) {
-        return;
-      }
+      // if (
+      //   (index >= 3)
+      //   && (item.chainId !== 137)
+      // ) {
+      //   return;
+      // }
 
       chainOps.push({
         updateOne: {
@@ -139,6 +139,38 @@ export class ChainsRpcsCron {
                     '$infoUrl',
                   ],
                 },
+                nativeCurrency: {
+                  $cond: [
+                    {
+                      $or: [
+                        {
+                          $eq: [
+                            { $ifNull: ['$nativeCurrency.name', ''] },
+                            '',
+                          ],
+                        },
+                        {
+                          $eq: [
+                            { $ifNull: ['$nativeCurrency.symbol', ''] },
+                            '',
+                          ],
+                        },
+                        {
+                          $eq: [
+                            { $ifNull: ['$nativeCurrency.decimals', null] },
+                            null,
+                          ],
+                        },
+                      ],
+                    },
+                    {
+                      name: item.nativeCurrency?.name ?? '',
+                      symbol: item.nativeCurrency?.symbol ?? '',
+                      decimals: item.nativeCurrency?.decimals ?? 0,
+                    },
+                    '$nativeCurrency',
+                  ],
+                },
               },
             },
           ],
@@ -171,12 +203,12 @@ export class ChainsRpcsCron {
         return;
       }
 
-      if (
-        (index >= 3)
-        && (item.chainId !== 137)
-      ) {
-        return;
-      }
+      // if (
+      //   (index >= 3)
+      //   && (item.chainId !== 137)
+      // ) {
+      //   return;
+      // }
 
       const urls = (item.rpc ?? [])
         .filter((u) => generalUtils.isUrl(u))

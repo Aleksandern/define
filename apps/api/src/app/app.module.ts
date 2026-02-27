@@ -10,7 +10,9 @@ import { configEnv } from '../environments';
 import { LoggerService } from '../services';
 import { EnvironmentT } from '../types';
 
+import { AddressModule } from './address/address.module';
 import { ChainsModule } from './chains/chains.module';
+import { RpcModule } from './rpc/rpc.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -29,6 +31,8 @@ import { AppService } from './app.service';
     }),
     ScheduleModule.forRoot(),
     ChainsModule,
+    AddressModule,
+    RpcModule,
   ],
   controllers: [AppController],
   providers: [

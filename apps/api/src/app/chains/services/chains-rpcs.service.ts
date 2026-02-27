@@ -6,6 +6,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import type {
   AggregatePaginateModel,
   PipelineStage,
+  Types,
 } from 'mongoose';
 
 import {
@@ -40,7 +41,7 @@ export class ChainsRpcsService {
   }: {
     limit?: number,
   } & XOR<{
-    chainId: string,
+    chainId: string | Types.ObjectId,
   }, {
     chainIdOrig: number,
   }>) {

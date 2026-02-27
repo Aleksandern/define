@@ -1,4 +1,6 @@
 import {
+  forwardRef,
+  Inject,
   Injectable,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -10,6 +12,7 @@ import axios from 'axios';
 import type {
   AggregatePaginateModel,
   AnyBulkWriteOperation,
+  Types,
 } from 'mongoose';
 import pLimit from 'p-limit';
 
@@ -19,6 +22,9 @@ import {
 } from '@define/common/utils';
 
 import { LoggerService } from '@appApi/services/logger.service';
+import { dbUtils } from '@appApi/utils';
+
+import { RpcClientFactory } from '@appApi/app/rpc/rpc-client.factory';
 
 import {
   Chain,
@@ -65,6 +71,9 @@ export class ChainsRpcsHealthCron {
   constructor(
     @InjectModel(Chain.name) private chainModel: AggregatePaginateModel<ChainDocument>,
     @InjectModel(ChainsRpc.name) private chainsRpcModel: AggregatePaginateModel<ChainsRpcDocument>,
+
+    @Inject(forwardRef(() => RpcClientFactory))
+    private readonly rpcClientFactory: RpcClientFactory,
   ) {}
 
   private async jsonRpc<T>({
@@ -96,6 +105,45 @@ export class ChainsRpcsHealthCron {
     }
 
     return res.data.result as T;
+  }
+
+  private async invalidateChainsByRpcIds({
+    rpcIds,
+  }: {
+    rpcIds: (string | Types.ObjectId)[],
+  }) {
+    if (!rpcIds.length) {
+      return;
+    }
+
+    const rpcObjectIds = rpcIds.map((id) => dbUtils.idToObjectId(id));
+
+    // 1) rpc -> chain ObjectId
+    const rpcs = await this.chainsRpcModel
+      .find({ _id: { $in: rpcObjectIds } })
+      .select({ chainId: 1 })
+      .lean();
+
+    if (!rpcs.length) {
+      return;
+    }
+
+    const chainIds = Array.from(new Set(rpcs.map((r) => r.chainId.toString())));
+
+    // 2) chain ObjectId -> chainIdOrig
+    const chains = await this.chainModel
+      .find({ _id: { $in: chainIds.map((id) => dbUtils.idToObjectId(id)) } })
+      .select({ chainIdOrig: 1 })
+      .lean();
+
+    // 3) invalidate per chainIdOrig
+    chains.forEach((c) => {
+      if (typeof c.chainIdOrig === 'number') {
+        this.rpcClientFactory.invalidate({
+          chainIdOrig: c.chainIdOrig,
+        });
+      }
+    });
   }
 
   @Timeout(1000)
@@ -263,6 +311,11 @@ export class ChainsRpcsHealthCron {
 
     const ok = results.filter((r) => r.isSuccess).length;
     const bad = (results.length - ok);
+
+    // invalidating only chains affected by this run
+    await this.invalidateChainsByRpcIds({
+      rpcIds: results.map((r) => r.chainsRpcId),
+    });
 
     this.logger.log({
       message: 'RPC health-check done',
