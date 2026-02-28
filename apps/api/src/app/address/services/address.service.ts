@@ -15,7 +15,10 @@ import {
 
 import { ChainsService } from '@appApi/app/chains/services';
 
-import { AddressNativeBalanceModule } from '../modules';
+import {
+  AddressAaveHfModule,
+  AddressNativeBalanceModule,
+} from '../modules';
 import {
   AddressModulesChainCtxT,
   AddressModuleT,
@@ -26,6 +29,7 @@ export class AddressService {
   constructor(
     private readonly chainsService: ChainsService,
     private readonly nativeBalanceModule: AddressNativeBalanceModule,
+    private readonly aaveHfModule: AddressAaveHfModule,
   ) {}
 
   async findOne({
@@ -52,10 +56,10 @@ export class AddressService {
       // limit: 50,
       chainIdsOrig: [
         1, // Ethereum
-        10, // Optimism
-        137, // Polygon
-        42161, // Arbitrum
-        8453, // Base
+        // 10, // Optimism
+        // 137, // Polygon
+        // 42161, // Arbitrum
+        // 8453, // Base
       ],
     });
 
@@ -85,6 +89,7 @@ export class AddressService {
 
     const modules: AddressModuleT[] = [
       this.nativeBalanceModule,
+      this.aaveHfModule,
     ];
 
     const limit = pLimit(5);

@@ -6,13 +6,17 @@ import { ChainsModule } from '../chains/chains.module';
 import { RpcModule } from '../rpc/rpc.module';
 
 import { AddressController } from './controllers';
-import { AddressNativeBalanceModule } from './modules';
+import {
+  AddressAaveHfModule,
+  AddressNativeBalanceModule,
+} from './modules';
 import { AddressService } from './services';
 
 @Module({
   providers: [
     AddressService,
     AddressNativeBalanceModule,
+    AddressAaveHfModule,
   ],
   controllers: [
     AddressController,
