@@ -33,6 +33,12 @@ export class AddressNativeBalanceModule implements AddressModuleT {
     address: Address,
     chain: AddressModulesChainCtxT,
   }): Promise<AddressModuleResultT<NativeBalanceDataT>> {
+    const res: AddressModuleResultT<NativeBalanceDataT> = {
+      key: this.key,
+      chain,
+      status: 'error',
+    };
+
     try {
       const client = await this.rpcClientFactory.getClient({
         chainIdOrig: chain.chainIdOrig,
@@ -44,26 +50,18 @@ export class AddressNativeBalanceModule implements AddressModuleT {
       const symbol = chain.nativeSymbol ?? 'NATIVE';
       const decimals = typeof chain.nativeDecimals === 'number' ? chain.nativeDecimals : 18;
 
-      return {
-        key: this.key,
-        chainIdOrig: chain.chainIdOrig,
-        chainName: chain.name ?? '',
-        status: 'ok',
-        data: {
-          symbol,
-          decimals,
-          balanceWei: wei.toString(),
-          balance: formatUnits(wei, decimals),
-        },
+      res.status = 'ok';
+      res.data = {
+        symbol,
+        decimals,
+        balanceWei: wei.toString(),
+        balance: formatUnits(wei, decimals),
       };
     } catch (e) {
-      return {
-        key: this.key,
-        chainIdOrig: chain.chainIdOrig,
-        chainName: chain.name ?? '',
-        status: 'error',
-        error: e instanceof Error ? e.message : String(e),
-      };
+      res.status = 'error';
+      res.error = e instanceof Error ? e.message : String(e);
     }
+
+    return res;
   }
 }

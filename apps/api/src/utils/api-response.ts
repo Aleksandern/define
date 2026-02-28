@@ -8,6 +8,9 @@ import {
   ApiErrrorT,
 } from '@define/common/types';
 
+/**
+ * @throws {Error}
+ */
 export const httpExceptionBadRequest = (
   data: string | (
     Pick<ApiErrrorT, 'message'>

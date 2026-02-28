@@ -5,7 +5,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import {
   Cron,
   CronExpression,
-  Timeout,
+  // Timeout,
 } from '@nestjs/schedule';
 
 import axios from 'axios';
@@ -77,7 +77,7 @@ export class ChainsRpcsCron {
     // chains START
     const chainOps: AnyBulkWriteOperation<ChainDocument>[] = [];
 
-    res.data.forEach((item, index) => {
+    res.data.forEach((item, _index) => {
       const hasChainId = (typeof item.chainId === 'number');
 
       if (!hasChainId) {
@@ -190,7 +190,7 @@ export class ChainsRpcsCron {
     const seen = new Set<string>();
     const rpcOps: AnyBulkWriteOperation<ChainsRpcDocument>[] = [];
 
-    res.data.forEach((item, index) => {
+    res.data.forEach((item, _index) => {
       const hasChainId = (typeof item.chainId === 'number');
 
       if (!hasChainId) {

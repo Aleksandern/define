@@ -4,13 +4,14 @@ import {
 
 import pLimit from 'p-limit';
 import {
-  Address,
   isAddress,
 } from 'viem';
 
 import { AddressFindOneT } from '@define/common/types';
 
-import { httpExceptionBadRequest } from '@appApi/utils';
+import {
+  httpExceptionBadRequest,
+} from '@appApi/utils';
 
 import { ChainsService } from '@appApi/app/chains/services';
 
@@ -29,26 +30,58 @@ export class AddressService {
 
   async findOne({
     idWallet,
+    query,
   }: {
     idWallet: string,
+    query: AddressFindOneT['BASE'],
   }) {
     if (!isAddress(idWallet)) {
       httpExceptionBadRequest('Invalid address');
+      throw new Error('');
     }
-    const address = idWallet as Address;
+
+    const {
+      hasList,
+    } = query;
+
+    const chainsOutMap: AddressFindOneT['RETURN_SRV']['chains'] = {};
+    let chainsOutList: AddressFindOneT['RETURN_SRV']['chainsList'] = [];
+    const address = idWallet;
 
     const chainsDb = await this.chainsService.getEnabledChains({
       // limit: 50,
-      chainIdsOrig: [1, 10, 137, 42161, 8453], // for testing
+      chainIdsOrig: [
+        1, // Ethereum
+        10, // Optimism
+        137, // Polygon
+        42161, // Arbitrum
+        8453, // Base
+      ],
     });
 
-    const chains: AddressModulesChainCtxT[] = chainsDb.map((c) => ({
-      chainIdOrig: c.chainIdOrig,
-      chainIdDb: c._id.toString(),
-      name: c.name,
-      nativeSymbol: c.nativeCurrency?.symbol,
-      nativeDecimals: c.nativeCurrency?.decimals,
-    }));
+    const chains: AddressModulesChainCtxT[] = chainsDb.map((c) => {
+      const res = {
+        chainIdOrig: c.chainIdOrig,
+        chainIdDb: c._id.toString(),
+        name: c.name,
+        nativeSymbol: c.nativeCurrency?.symbol,
+        nativeDecimals: c.nativeCurrency?.decimals,
+      };
+
+      const k = c.chainIdOrig.toString();
+      chainsOutMap[k] = {
+        meta: {
+          chainIdOrig: c.chainIdOrig,
+          chainIdDb: c._id.toString(),
+          name: c.name,
+          nativeSymbol: c.nativeCurrency?.symbol,
+          nativeDecimals: c.nativeCurrency?.decimals,
+        },
+        modules: {},
+      };
+
+      return res;
+    });
 
     const modules: AddressModuleT[] = [
       this.nativeBalanceModule,
@@ -67,8 +100,54 @@ export class AddressService {
 
     const results = await Promise.all(tasks);
 
-    console.log('[ !!!results ]', results);
+    // result START
+    results.forEach((r) => {
+      if (!r) {
+        return;
+      }
 
-    return 'ok' as unknown as AddressFindOneT['RETURN_SRV'];
+      const chainKey = String(r.chain.chainIdOrig);
+
+      // in case if chain was not added beforehand
+      if (!chainsOutMap[chainKey]) {
+        chainsOutMap[chainKey] = {
+          meta: {
+            chainIdOrig: r.chain.chainIdOrig,
+            chainIdDb: r.chain.chainIdDb,
+            name: r.chain.name,
+            nativeSymbol: r.chain.nativeSymbol,
+            nativeDecimals: r.chain.nativeDecimals,
+          },
+          modules: {},
+        };
+      }
+
+      chainsOutMap[chainKey].modules[r.key] = {
+        status: r.status,
+        ...(r.data !== undefined ? { data: r.data as unknown } : {}),
+        ...(r.error ? { error: r.error } : {}),
+      };
+    });
+
+    if (hasList) {
+      chainsOutList = Object.entries(chainsOutMap).map(([chainIdOrig, v]) => ({
+        ...v,
+        chainIdOrig: Number(chainIdOrig),
+        meta: {
+          ...(v.meta ?? {}),
+          chainIdOrig: Number(chainIdOrig),
+          chainIdDb: v.meta?.chainIdDb ?? '',
+        },
+      }));
+    }
+    // result END
+
+    const res: AddressFindOneT['RETURN_SRV'] = {
+      address,
+      chains: chainsOutMap,
+      chainsList: chainsOutList,
+    };
+
+    return res;
   }
 }

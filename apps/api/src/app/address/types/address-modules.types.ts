@@ -1,21 +1,16 @@
 import type { Address } from 'viem';
 
-export interface AddressModulesChainCtxT {
-  chainIdOrig: number,
-  chainIdDb: string, // _id chain in DB
-  name?: string,
-  nativeSymbol?: string, //  convinent for UI
-  nativeDecimals?: number,
-}
+import { AddressFindOneResultMetaT } from '@define/common/types';
+
+export type AddressModulesChainCtxT = AddressFindOneResultMetaT;
 
 export type AddressModuleStatusT = 'ok' | 'error';
 
-export interface AddressModuleResultT<T = any> {
+export interface AddressModuleResultT<T = unknown> {
   key: string, // 'nativeBalance' | 'erc20Balances' | 'aaveHf' ...
-  chainIdOrig: number,
-  chainName: string,
-  status: AddressModuleStatusT,
+  chain: AddressModulesChainCtxT,
   data?: T,
+  status: AddressModuleStatusT,
   error?: string,
 }
 
