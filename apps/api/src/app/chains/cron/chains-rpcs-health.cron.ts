@@ -10,6 +10,10 @@ import {
 
 import axios from 'axios';
 import type {
+  MatchKeysAndValues,
+  UpdateFilter,
+} from 'mongodb';
+import type {
   AggregatePaginateModel,
   AnyBulkWriteOperation,
   Types,
@@ -19,6 +23,7 @@ import pLimit from 'p-limit';
 import { ChainsRpcDisableReasonP } from '@define/common/types';
 import {
   dateTimeUtils,
+  tk,
 } from '@define/common/utils';
 
 import { LoggerService } from '@appApi/services/logger.service';
@@ -158,11 +163,12 @@ export class ChainsRpcsHealthCron {
 
     const rpcs = await this.chainsRpcModel
       .find({
+        // _id: dbUtils.idToObjectId('69a1978e04455c5ac9d7c17f'),
         $or: [{ cooldownUntil: { $exists: false } }, { cooldownUntil: { $lte: dateNow } }],
       })
       .sort({
-        isHealthy: 1,
         lastCheckedAt: 1,
+        isHealthy: 1,
       })
       .limit(200)
       .lean();
@@ -200,10 +206,17 @@ export class ChainsRpcsHealthCron {
     // 3) check one RPC
     const checkOne = async (rpcDoc: typeof rpcs[number]) => {
       const chainInfo = chainById.get(String(rpcDoc.chainId));
-      const resTmp = {
+      const resTmp: {
+        chainsRpcId: Types.ObjectId,
+        latencyMs: number,
+        isSuccess: boolean,
+        supportsEthCall?: boolean,
+        error: string,
+      } = {
         chainsRpcId: rpcDoc._id,
         latencyMs: 0,
         isSuccess: false,
+        supportsEthCall: undefined,
         error: '',
       };
 
@@ -248,6 +261,46 @@ export class ChainsRpcsHealthCron {
         resTmp.error = msg;
       }
 
+      if (resTmp.isSuccess) {
+        try {
+          // eth_call (must exist for readContract)
+          await this.jsonRpc<string>({
+            http,
+            url: rpcDoc.url,
+            method: 'eth_call',
+            params: [
+              // call object (minimal). many nodes accept to: 0x0 with data: 0x
+              {
+                to: '0x0000000000000000000000000000000000000000',
+                data: '0x',
+              },
+              'latest',
+            ],
+          });
+
+          resTmp.supportsEthCall = true;
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          const msgLowCase = msg.toLowerCase();
+
+          const isEthCallBlocked = (
+            msgLowCase.includes('eth_call')
+            && (
+              msgLowCase.includes('not whitelisted')
+              || msgLowCase.includes('does not exist')
+              || msgLowCase.includes('method not found')
+              || msgLowCase.includes('not available')
+            )
+          );
+
+          if (isEthCallBlocked) {
+            resTmp.supportsEthCall = false;
+          } else {
+            resTmp.error = resTmp.error || `ETH_CALL_FAILED ${msg}`;
+          }
+        }
+      }
+
       return resTmp;
     };
 
@@ -263,8 +316,10 @@ export class ChainsRpcsHealthCron {
     const coolDownMs = 60_000;
 
     const ops = results.map<AnyBulkWriteOperation<ChainsRpcDocument>>((item) => {
+      let resTmp: AnyBulkWriteOperation<ChainsRpcDocument> = {} as AnyBulkWriteOperation<ChainsRpcDocument>;
+
       if (item.isSuccess) {
-        return {
+        resTmp = {
           updateOne: {
             filter: {
               _id: item.chainsRpcId,
@@ -274,37 +329,45 @@ export class ChainsRpcsHealthCron {
                 isHealthy: true,
                 latencyMs: item.latencyMs,
                 lastCheckedAt: dateNow,
+                lastError: item.error ?? '',
                 failCount: 0,
               },
               $unset: {
                 cooldownUntil: '',
-                lastError: '',
               },
+            },
+          },
+        };
+
+        if (tk.isBoolean(item.supportsEthCall)) {
+          ((resTmp.updateOne.update as UpdateFilter<ChainsRpcDocument>).$set as MatchKeysAndValues<any>).supportsEthCall = item.supportsEthCall;
+        } else {
+          ((resTmp.updateOne.update as UpdateFilter<ChainsRpcDocument>).$unset as MatchKeysAndValues<any>).supportsEthCall = '';
+        }
+      } else {
+        const isWrongChain = item.error.startsWith('CHAIN_MISMATCH');
+
+        resTmp = {
+          updateOne: {
+            filter: {
+              _id: item.chainsRpcId,
+            },
+            update: {
+              $set: {
+                isHealthy: false,
+                isDisabled: isWrongChain,
+                disabledReason: isWrongChain ? ChainsRpcDisableReasonP.wrongChain : undefined,
+                lastCheckedAt: dateNow,
+                lastError: item.error,
+                cooldownUntil: new Date(dateNowMs + coolDownMs),
+              },
+              $inc: { failCount: 1 },
             },
           },
         };
       }
 
-      const isWrongChain = item.error.startsWith('CHAIN_MISMATCH');
-
-      return {
-        updateOne: {
-          filter: {
-            _id: item.chainsRpcId,
-          },
-          update: {
-            $set: {
-              isHealthy: false,
-              isDisabled: isWrongChain,
-              disabledReason: isWrongChain ? ChainsRpcDisableReasonP.wrongChain : undefined,
-              lastCheckedAt: dateNow,
-              lastError: item.error,
-              cooldownUntil: new Date(dateNowMs + coolDownMs),
-            },
-            $inc: { failCount: 1 },
-          },
-        },
-      };
+      return resTmp;
     });
 
     await this.chainsRpcModel.bulkWrite(ops, { ordered: false });

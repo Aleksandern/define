@@ -47,4 +47,24 @@ export const generalUtils = {
 
     return true;
   },
+
+  decimalsFromUnit(unit: bigint): number {
+    // waiting for 1, 10, 100, 1e18...
+    const s = unit.toString();
+
+    if (s === '1') {
+      return 0;
+    }
+
+    // unit = 1 followed by N zeros
+    if (
+      s.startsWith('1')
+      && /^10+$/.test(s)
+    ) {
+      return s.length - 1;
+    }
+
+    // fallback
+    return 18;
+  },
 };

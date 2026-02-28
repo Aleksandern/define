@@ -94,6 +94,12 @@ export class ChainsRpc implements ChainsRpcSchemaT {
     enum: ChainsRpcDisableReasonP,
   })
   disabledReason: ChainsRpcSchemaT['disabledReason'];
+
+  @Prop({
+    required: false,
+    type: Boolean,
+  })
+  supportsEthCall: ChainsRpcSchemaT['supportsEthCall'];
 }
 
 const schema = SchemaFactory.createForClass(ChainsRpc);

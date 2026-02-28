@@ -25,21 +25,37 @@ const poolAbi = parseAbi([
   + 'uint256 healthFactor)',
 ]);
 
-interface AaveHfOneMarket {
+interface AaveHfSummaryT {
+  healthFactor: string, // "∞" или "1.234..."
+  hasDebt: boolean,
+  totalDebtBase: string,
+  totalDebtUsd: string,
+  totalCollateralBase: string,
+  totalCollateralUsd: string,
+}
+
+interface AaveHfDetailsT {
+  availableBorrowsBase: string,
+  currentLiquidationThreshold: string,
+  ltv: string,
+  healthFactorRaw: string,
+}
+
+interface AaveHfOneMarketT {
   marketKey: string,
   pool: string,
-  totalDebtBase: string,
-  healthFactorRaw: string,
-  healthFactor: string, // "∞" или число строкой
-  hasDebt: boolean,
+  summary: AaveHfSummaryT,
+  details?: AaveHfDetailsT,
 }
 
 interface AaveHfDataT {
-  markets: AaveHfOneMarket[],
+  markets: AaveHfOneMarketT[],
 }
 
 // eslint-disable-next-line no-bitwise
 const MAX_UINT256 = (1n << 256n) - 1n;
+// TODO: ABI https://github.com/aave-dao/aave-v3-origin
+const AAVE_BASE_DECIMALS = 8;
 
 @Injectable()
 export class AddressAaveHfModule implements AddressModuleT {
@@ -75,11 +91,11 @@ export class AddressAaveHfModule implements AddressModuleT {
       const results = await Promise.all(
         markets.map(async (m) => {
           const [
-            _totalCollateralBase,
+            totalCollateralBase,
             totalDebtBase,
-            _availableBorrowsBase,
-            _currentLiquidationThreshold,
-            _ltv,
+            availableBorrowsBase,
+            currentLiquidationThreshold,
+            ltv,
             healthFactorRaw,
           ] = await client.readContract({
             address: m.pool as Address,
@@ -93,16 +109,29 @@ export class AddressAaveHfModule implements AddressModuleT {
             !hasDebt
             || healthFactorRaw === MAX_UINT256
           );
-          const healthFactor = isInfinite ? '∞' : Number(formatUnits(healthFactorRaw, 18)).toString();
+          const healthFactor = isInfinite ? '∞' : formatUnits(healthFactorRaw, 18);
+
+          const summary: AaveHfSummaryT = {
+            healthFactor,
+            hasDebt,
+            totalDebtBase: formatUnits(totalDebtBase, AAVE_BASE_DECIMALS), // base currecy
+            totalDebtUsd: formatUnits(totalDebtBase, AAVE_BASE_DECIMALS),
+            totalCollateralBase: formatUnits(totalCollateralBase, AAVE_BASE_DECIMALS),
+            totalCollateralUsd: formatUnits(totalCollateralBase, AAVE_BASE_DECIMALS),
+          };
+          const details: AaveHfDetailsT = {
+            availableBorrowsBase: availableBorrowsBase.toString(),
+            currentLiquidationThreshold: currentLiquidationThreshold.toString(),
+            ltv: ltv.toString(),
+            healthFactorRaw: healthFactorRaw.toString(),
+          };
 
           return {
             marketKey: m.key,
             pool: m.pool,
-            hasDebt,
-            totalDebtBase: totalDebtBase.toString(),
-            healthFactorRaw: healthFactorRaw.toString(),
-            healthFactor,
-          } satisfies AaveHfOneMarket;
+            summary,
+            details,
+          } satisfies AaveHfOneMarketT;
         }),
       );
 

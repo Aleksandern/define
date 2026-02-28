@@ -4,6 +4,8 @@ export interface AaveV3Market {
   key: string, // for example "AaveV3Ethereum"
   chainId: number, // AB.*.CHAIN_ID
   pool: string, // AB.*.POOL
+  provider: string, // POOL_ADDRESSES_PROVIDER
+  uiPoolDataProvider: string, // UI_POOL_DATA_PROVIDER
 }
 
 function isAaveV3Market(
@@ -21,6 +23,8 @@ function isAaveV3Market(
   const res = (
     (typeof v.CHAIN_ID === 'number')
     && (typeof v.POOL === 'string')
+    && (typeof v.POOL_ADDRESSES_PROVIDER === 'string')
+    && (typeof v.UI_POOL_DATA_PROVIDER === 'string')
   );
 
   return res;
@@ -50,12 +54,17 @@ export function getAaveV3MarketsByChainId({
       return;
     }
 
-    const typedValue = value as typeof value & { POOL: string };
+    const typedValue = value as typeof value & {
+      POOL_ADDRESSES_PROVIDER: string,
+      UI_POOL_DATA_PROVIDER: string,
+    };
 
     res.push({
       key,
       chainId: typedValue.CHAIN_ID,
       pool: typedValue.POOL,
+      provider: typedValue.POOL_ADDRESSES_PROVIDER,
+      uiPoolDataProvider: typedValue.UI_POOL_DATA_PROVIDER,
     });
   });
 

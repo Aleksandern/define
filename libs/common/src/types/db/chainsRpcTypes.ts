@@ -19,8 +19,9 @@ export interface ChainsRpcT<SRV extends boolean = false> {
   lastError?: string,
   isHealthy?: boolean,
   failCount?: number,
-  isDisabled?: boolean, // not in db, used for health check result only
+  isDisabled?: boolean,
   disabledReason?: ChainsRpcDisableReasonP,
+  supportsEthCall?: boolean,
 }
 
 export type ChainsRpcSrvT = ChainsRpcT<true>;
