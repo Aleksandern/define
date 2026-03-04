@@ -9,6 +9,7 @@ import {
 import { getAaveV3MarketsByChainId } from '@appApi/chains/aave';
 
 import { RpcClientFactory } from '../../rpc/rpc-client.factory';
+import { ADDRESS_MODULES } from '../constants';
 import type {
   AddressModuleResultT,
   AddressModulesChainCtxT,
@@ -59,7 +60,9 @@ const AAVE_BASE_DECIMALS = 8;
 
 @Injectable()
 export class AddressAaveHfModule implements AddressModuleT {
-  key = 'aaveHf';
+  key = ADDRESS_MODULES.aaveHf;
+
+  requires = [ADDRESS_MODULES.protocolDiscovery];
 
   constructor(private readonly rpcClientFactory: RpcClientFactory) {}
 

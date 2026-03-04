@@ -7,6 +7,7 @@ import {
 
 import { RpcClientFactory } from '@appApi/app/rpc/rpc-client.factory';
 
+import { ADDRESS_MODULES } from '../constants';
 import type {
   AddressModuleResultT,
   AddressModulesChainCtxT,
@@ -22,7 +23,7 @@ interface NativeBalanceDataT {
 
 @Injectable()
 export class AddressNativeBalanceModule implements AddressModuleT {
-  readonly key = 'nativeBalance';
+  readonly key = ADDRESS_MODULES.nativeBalance;
 
   constructor(private readonly rpcClientFactory: RpcClientFactory) {}
 

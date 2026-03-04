@@ -2,6 +2,8 @@ import type { Address } from 'viem';
 
 import { AddressFindOneResultMetaT } from '@define/common/types';
 
+import { AddressModuleKeyT } from '../constants';
+
 export type AddressModulesChainCtxT = AddressFindOneResultMetaT;
 
 export type AddressModuleStatusT = 'ok' | 'error';
@@ -14,7 +16,18 @@ export interface AddressModuleResultT<T = unknown> {
   error?: string,
 }
 
+export interface AddressModulesRunCtxT {
+  // data of modules by key
+  data: Record<string, unknown>,
+}
+
 export interface AddressModuleT {
-  key: string,
-  run(params: { address: Address; chain: AddressModulesChainCtxT }): Promise<AddressModuleResultT | null>,
+  key: AddressModuleKeyT,
+  // if the module depends on the results of other modules
+  requires?: AddressModuleKeyT[],
+  run(params: {
+    address: Address,
+    chain: AddressModulesChainCtxT,
+    ctx: AddressModulesRunCtxT,
+  }): Promise<AddressModuleResultT | null>,
 }

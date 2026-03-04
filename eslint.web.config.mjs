@@ -1,5 +1,4 @@
-import tseslint from 'typescript-eslint';
-// import airbnbTs from './eslint/eslint.airbnb.mjs';
+import { configs as teConfigs} from 'typescript-eslint';
 import { configs } from '@snowyyd/eslint-config';
 
 import rulesConfig from './eslint.rules.config.mjs';
@@ -9,9 +8,8 @@ const __dirname = import.meta.dirname;
 
 const tsConfig = [
   ...baseConfig,
-  ...tseslint.configs.recommendedTypeChecked,
-  ...tseslint.configs.stylisticTypeChecked,
-  // ...airbnbTs,
+  ...teConfigs.recommendedTypeChecked,
+  ...teConfigs.stylisticTypeChecked,
 	...configs.airbnb,
 	...configs.esm,
   ...rulesConfig,

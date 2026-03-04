@@ -8,7 +8,10 @@ import { RpcModule } from '../rpc/rpc.module';
 import { AddressController } from './controllers';
 import {
   AddressAaveHfModule,
+  AddressChainActivityModule,
+  AddressErc20ActivityModule,
   AddressNativeBalanceModule,
+  AddressProtocolDiscoveryModule,
 } from './modules';
 import { AddressService } from './services';
 
@@ -17,6 +20,9 @@ import { AddressService } from './services';
     AddressService,
     AddressNativeBalanceModule,
     AddressAaveHfModule,
+    AddressProtocolDiscoveryModule,
+    AddressChainActivityModule,
+    AddressErc20ActivityModule,
   ],
   controllers: [
     AddressController,
