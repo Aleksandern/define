@@ -20,6 +20,10 @@ function asArray(step: AddressModuleStepT): AddressModuleT[] {
   return Array.isArray(step) ? step : [step];
 }
 
+/**
+ * Module execution policy:
+ * @see: ../docs/module-execution-policy.ts
+ */
 export async function runModulesForChainPipeline({
   address,
   chain,

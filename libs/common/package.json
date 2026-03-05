@@ -27,6 +27,16 @@
       "import": "./src/utils/index.ts",
       "default": "./src/utils/index.ts"
     },
+    "./rpc": {
+      "types": "./src/rpc/index.ts",
+      "import": "./src/rpc/index.ts",
+      "default": "./src/rpc/index.ts"
+    },
+    "./evm": {
+      "types": "./src/evm/index.ts",
+      "import": "./src/evm/index.ts",
+      "default": "./src/evm/index.ts"
+    },
     "./package.json": "./package.json"
   },
   "nx": {

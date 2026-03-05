@@ -18,10 +18,12 @@ import { ChainsService } from '@appApi/app/chains/services';
 import { ADDRESS_MODULES } from '../constants';
 import {
   AddressAaveHfModule,
+  AddressAssetResolveModule,
   AddressChainActivityModule,
   AddressErc20ActivityModule,
   AddressNativeBalanceModule,
   AddressProtocolDiscoveryModule,
+  AddressScanModule,
 } from '../modules';
 import {
   AddressModulesPipelineT,
@@ -40,6 +42,8 @@ export class AddressService {
     private readonly protocolDiscoveryModule: AddressProtocolDiscoveryModule,
     private readonly chainActivityModule: AddressChainActivityModule,
     private readonly erc20ActivityModule: AddressErc20ActivityModule,
+    private readonly scanModule: AddressScanModule,
+    private readonly assetResolveModule: AddressAssetResolveModule,
   ) {}
 
   async findOne({
@@ -97,30 +101,17 @@ export class AddressService {
       return res;
     });
 
-    // const modules: AddressModuleT[] = [
-    //   this.chainActivityModule, // gate
-    //   this.nativeBalanceModule,
-    //   // this.aaveHfModule,
-    //   // this.protocolDiscoveryModule,
-    // ];
     const pipeline: AddressModulesPipelineT = [
       this.chainActivityModule,
-      this.erc20ActivityModule,
-      this.nativeBalanceModule,
+      this.scanModule,
+      this.assetResolveModule,
+      // this.erc20ActivityModule,
+      // this.nativeBalanceModule,
       // this.aaveHfModule,
       // this.protocolDiscoveryModule,
     ];
 
     const limit = pLimit(5);
-
-    // const tasks = chains.flatMap((chain) => (
-    //   modules.map((mod) => (
-    //     limit(() => mod.run({
-    //       address,
-    //       chain,
-    //     }))
-    //   ))
-    // ));
 
     const tasks = chains.map((chain) => limit(async () => {
       const chainKey = String(chain.chainIdOrig);
@@ -149,35 +140,6 @@ export class AddressService {
     }));
 
     await Promise.all(tasks);
-
-    // result START
-    // results.forEach((r) => {
-    //   if (!r) {
-    //     return;
-    //   }
-
-    //   const chainKey = String(r.chain.chainIdOrig);
-
-    //   // in case if chain was not added beforehand
-    //   if (!chainsOutMap[chainKey]) {
-    //     chainsOutMap[chainKey] = {
-    //       meta: {
-    //         chainIdOrig: r.chain.chainIdOrig,
-    //         chainIdDb: r.chain.chainIdDb,
-    //         name: r.chain.name,
-    //         nativeSymbol: r.chain.nativeSymbol,
-    //         nativeDecimals: r.chain.nativeDecimals,
-    //       },
-    //       modules: {},
-    //     };
-    //   }
-
-    //   chainsOutMap[chainKey].modules[r.key] = {
-    //     status: r.status,
-    //     ...(r.data !== undefined ? { data: r.data as unknown } : {}),
-    //     ...(r.error ? { error: r.error } : {}),
-    //   };
-    // });
 
     if (hasList) {
       chainsOutList = Object.entries(chainsOutMap).map(([chainIdOrig, v]) => ({

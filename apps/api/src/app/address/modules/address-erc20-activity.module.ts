@@ -6,10 +6,18 @@ import type {
   PublicClient,
 } from 'viem';
 import {
-  encodePacked,
   keccak256,
   toHex,
 } from 'viem';
+
+import {
+  toBlockHex,
+  topicAddress,
+} from '@define/common/evm';
+import {
+  classifyRpcLogsError,
+  RpcLogsErrorTypeT,
+} from '@define/common/rpc';
 
 import { RpcClientFactory } from '@appApi/app/rpc/rpc-client.factory';
 
@@ -20,108 +28,21 @@ import type {
   AddressModulesRunCtxT,
   AddressModuleT,
 } from '../types';
+import { isChainActive } from '../utils';
 
-type Erc20ActivityNoteT = (
-  | 'logs_not_supported'
-  | 'rate_limited'
-  | 'logs_too_heavy'
-  | 'logs_requires_address'
-  | 'network_error'
-);
-
-export interface Erc20ActivityDataT {
+export interface AddressErc20ActivityDataT {
   hasErc20Activity: boolean,
   transfersIn: number,
   transfersOut: number,
   approvals: number,
   scannedFromBlock: string,
   scannedToBlock: string,
-  note?: Erc20ActivityNoteT,
+  note?: RpcLogsErrorTypeT,
 }
 
 // ERC-20 topics
 const TRANSFER_TOPIC0 = keccak256(toHex('Transfer(address,address,uint256)'));
 const APPROVAL_TOPIC0 = keccak256(toHex('Approval(address,address,uint256)'));
-
-function topicAddress(addr: Address): Hex {
-  // topic = 32-byte left-padded address
-  const packed = encodePacked(['address'], [addr]); // 20 bytes hex
-
-  return (`0x${packed.slice(2).padStart(64, '0')}`);
-}
-
-function toBlockHex(b: bigint): Hex {
-  return (`0x${b.toString(16)}`);
-}
-
-function normalizeMsg(e: unknown): string {
-  return (e instanceof Error ? e.message : String(e)).toLowerCase();
-}
-
-function classifyLogsError(e: unknown): Erc20ActivityNoteT | undefined {
-  const msg = normalizeMsg(e);
-
-  // A) not supported / blocked
-  if (
-    msg.includes('eth_getlogs') && (
-      msg.includes('does not exist')
-      || msg.includes('not available')
-      || msg.includes('not whitelisted')
-      || msg.includes('method not found')
-      || msg.includes('unsupported')
-    )
-  ) {
-    return 'logs_not_supported';
-  }
-
-  // B) rate limited
-  if (
-    msg.includes('429')
-    || msg.includes('rate limit')
-    || msg.includes('too many requests')
-    || msg.includes('throttle')
-    || msg.includes('request rate exceeded')
-  ) {
-    return 'rate_limited';
-  }
-
-  // C) too heavy / too many results / too wide
-  if (
-    msg.includes('too many results')
-    || (
-      msg.includes('more than')
-      && msg.includes('results')
-    )
-    || msg.includes('response size')
-    || msg.includes('range is too wide')
-    || msg.includes('log response size')
-    || msg.includes('query returned more than')
-  ) {
-    return 'logs_too_heavy';
-  }
-
-  // D) requires address
-  if (
-    msg.includes('must specify address')
-    || msg.includes('address required')
-  ) {
-    return 'logs_requires_address';
-  }
-
-  // E) network-ish
-  if (
-    msg.includes('timeout')
-    || msg.includes('fetch failed')
-    || msg.includes('econnreset')
-    || msg.includes('econnrefused')
-    || msg.includes('enotfound')
-    || msg.includes('etimedout')
-  ) {
-    return 'network_error';
-  }
-
-  return undefined;
-}
 
 interface RpcLog {
   address: Address,
@@ -155,6 +76,41 @@ async function ethGetLogsByTopics({
   return logs as RpcLog[];
 }
 
+/**
+ * Назначение:
+ * Определить, взаимодействовал ли адрес с ERC-20 токенами
+ * (что является сильным сигналом DeFi активности).
+ *
+ * Проверки:
+ * - eth_getLogs Transfer(address,address,uint256)
+ * - eth_getLogs Approval(address,address,uint256)
+ *
+ * Обычно сканируется последние N блоков (например 20k).
+ *
+ * Результат:
+ * {
+ *   hasErc20Activity: boolean,
+ *   transfersIn: number,
+ *   transfersOut: number,
+ *   approvals: number
+ * }
+ *
+ * Важное отличие от chainActivity:
+ *
+ * erc20Activity НЕ является строгим gate-модулем.
+ *
+ * Причины:
+ * - eth_getLogs часто ограничен RPC провайдерами
+ * - activity могла быть вне lookback диапазона
+ * - некоторые RPC полностью блокируют logs
+ *
+ * Поэтому ошибки eth_getLogs должны переводиться в:
+ *
+ * status: "ok"
+ * data.note: "logs_not_supported" | "rate_limited" | ...
+ *
+ * @see ../docs/module-execution-policy.ts
+ */
 @Injectable()
 export class AddressErc20ActivityModule implements AddressModuleT {
   key = ADDRESS_MODULES.erc20Activity;
@@ -170,18 +126,18 @@ export class AddressErc20ActivityModule implements AddressModuleT {
     address: Address,
     chain: AddressModulesChainCtxT,
     ctx: AddressModulesRunCtxT,
-  }): Promise<AddressModuleResultT<Erc20ActivityDataT> | null> {
+  }): Promise<AddressModuleResultT<AddressErc20ActivityDataT> | null> {
     const {
       address, chain, ctx,
     } = params;
 
     // gate: if the chain is not active - do not spend eth_getLogs
-    const act = ctx.data[ADDRESS_MODULES.chainActivity] as { isActive?: boolean } | undefined;
-    if (act?.isActive === false) {
+    const isChainActiveRes = isChainActive({ ctx });
+    if (!isChainActiveRes) {
       return null;
     }
 
-    const res: AddressModuleResultT<Erc20ActivityDataT> = {
+    const res: AddressModuleResultT<AddressErc20ActivityDataT> = {
       key: this.key,
       chain,
       status: 'error',
@@ -243,11 +199,11 @@ export class AddressErc20ActivityModule implements AddressModuleT {
 
       return res;
     } catch (e) {
-      const note = classifyLogsError(e);
+      const note = classifyRpcLogsError(e);
 
       if (note) {
         res.status = 'ok';
-        (res.data as Required<Erc20ActivityDataT>).note = note; // <= this is what frontend can show as a gray text
+        (res.data as Required<AddressErc20ActivityDataT>).note = note; // <= this is what frontend can show as a gray text
 
         return res;
       }

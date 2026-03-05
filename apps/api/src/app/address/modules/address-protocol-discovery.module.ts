@@ -17,6 +17,7 @@ import type {
   AddressModulesChainCtxT,
   AddressModuleT,
 } from '../types';
+import { isErc20Active } from '../utils';
 
 interface DiscoveryData {
   aave?: {
@@ -41,28 +42,32 @@ const AAVE_TOPICS0 = [
 export class AddressProtocolDiscoveryModule implements AddressModuleT {
   key = ADDRESS_MODULES.protocolDiscovery;
 
-  // сколько блоков назад смотрим (MVP)
-  // позже заменишь на lastDiscoveryBlock in DB
+  // how many blocks back we look (MVP)
+  // later needs to replace with lastDiscoveryBlock in DB
   private readonly lookbackBlocks = 200_000n;
+
+  requires = [ADDRESS_MODULES.erc20Activity];
 
   constructor(
     private readonly rpcClientFactory: RpcClientFactory,
   ) {}
 
-  async run(params: {
-    address: Address,
-    chain: AddressModulesChainCtxT,
-  }): Promise<AddressModuleResultT<DiscoveryData> | null> {
-    const {
-      address, chain,
-    } = params;
-
+  async run({
+    address,
+    chain,
+    ctx,
+  }: Parameters<AddressModuleT['run']>[0]): Promise<AddressModuleResultT<DiscoveryData> | null> {
     const res: AddressModuleResultT<DiscoveryData> = {
       key: this.key,
       chain,
       status: 'error',
       data: {},
     };
+
+    const isErc20ActiveResult = isErc20Active({ ctx });
+    if (isErc20ActiveResult === false) {
+      return null;
+    }
 
     try {
       const client = await this.rpcClientFactory.getClient({ chainIdOrig: chain.chainIdOrig });

@@ -67,4 +67,10 @@ export const generalUtils = {
     // fallback
     return 18;
   },
+
+  normalizeErrorMsg(e: unknown): string {
+    const res = (e instanceof Error ? e.message : String(e)).toLowerCase();
+
+    return res;
+  },
 };

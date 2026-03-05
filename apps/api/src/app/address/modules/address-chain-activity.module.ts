@@ -12,13 +12,44 @@ import type {
   AddressModuleT,
 } from '../types';
 
-interface ChainActivityDataT {
+export interface AddressChainActivityDataT {
   txCount: number,
   nativeBalanceWei: string,
   isActive: boolean, // gate flag
   reason: 'txCount>0' | 'balance>0' | 'inactive',
 }
 
+/**
+ * Назначение:
+ * Определить, использовался ли адрес вообще в данной сети.
+ *
+ * Проверки:
+ * - eth_getTransactionCount(address)
+ * - eth_getBalance(address)
+ *
+ * Результат:
+ * {
+ *   isActive: boolean,
+ *   txCount: number,
+ *   nativeBalanceWei: string
+ * }
+ *
+ * Политика:
+ *
+ * - chainActivity должен выполняться ПЕРВЫМ модулем для каждой сети.
+ * - если isActive === false → дальнейшие модули по этой сети не запускаются.
+ *
+ * Причина:
+ * Если адрес никогда не использовался в сети, нет смысла выполнять:
+ * - token discovery
+ * - ERC20 balance
+ * - protocol discovery
+ * - health factor
+ *
+ * Это экономит большое количество RPC запросов.
+ *
+ * @see ../docs/module-execution-policy.ts
+ */
 @Injectable()
 export class AddressChainActivityModule implements AddressModuleT {
   key = ADDRESS_MODULES.chainActivity;
@@ -29,12 +60,12 @@ export class AddressChainActivityModule implements AddressModuleT {
     address: Address,
     chain: AddressModulesChainCtxT,
     ctx: AddressModulesRunCtxT,
-  }): Promise<AddressModuleResultT<ChainActivityDataT> | null> {
+  }): Promise<AddressModuleResultT<AddressChainActivityDataT> | null> {
     const {
       address, chain,
     } = params;
 
-    const res: AddressModuleResultT<ChainActivityDataT> = {
+    const res: AddressModuleResultT<AddressChainActivityDataT> = {
       key: this.key,
       chain,
       status: 'error',
@@ -63,10 +94,10 @@ export class AddressChainActivityModule implements AddressModuleT {
         || isActiveByBalance
       );
 
-      let reason: ChainActivityDataT['reason'];
+      let reason: AddressChainActivityDataT['reason'];
 
       if (isActiveByTx) {
-        reason = 'txCount>0'; // address is active
+        reason = 'txCount>0'; // address is active, has has outgoing transactions
       } else if (isActiveByBalance) {
         reason = 'balance>0'; // address at least got funds
       } else {

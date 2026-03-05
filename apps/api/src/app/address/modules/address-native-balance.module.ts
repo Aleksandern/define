@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
 import {
-  type Address,
   formatUnits,
 } from 'viem';
 
@@ -10,9 +9,9 @@ import { RpcClientFactory } from '@appApi/app/rpc/rpc-client.factory';
 import { ADDRESS_MODULES } from '../constants';
 import type {
   AddressModuleResultT,
-  AddressModulesChainCtxT,
   AddressModuleT,
 } from '../types';
+import { isChainActive } from '../utils';
 
 interface NativeBalanceDataT {
   symbol: string,
@@ -30,15 +29,18 @@ export class AddressNativeBalanceModule implements AddressModuleT {
   async run({
     address,
     chain,
-  }: {
-    address: Address,
-    chain: AddressModulesChainCtxT,
-  }): Promise<AddressModuleResultT<NativeBalanceDataT>> {
+    ctx,
+  }: Parameters<AddressModuleT['run']>[0]): Promise<AddressModuleResultT<NativeBalanceDataT> | null> {
     const res: AddressModuleResultT<NativeBalanceDataT> = {
       key: this.key,
       chain,
       status: 'error',
     };
+
+    const canRun = isChainActive({ ctx });
+    if (!canRun) {
+      return null;
+    }
 
     try {
       const client = await this.rpcClientFactory.getClient({

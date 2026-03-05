@@ -62,7 +62,7 @@ const AAVE_BASE_DECIMALS = 8;
 export class AddressAaveHfModule implements AddressModuleT {
   key = ADDRESS_MODULES.aaveHf;
 
-  requires = [ADDRESS_MODULES.protocolDiscovery];
+  // requires = [ADDRESS_MODULES.protocolDiscovery];
 
   constructor(private readonly rpcClientFactory: RpcClientFactory) {}
 
