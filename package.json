@@ -14,7 +14,7 @@
     "db:prod:dump": "./files/db-dump.sh --isProd",
     "db:dev:restore": "./files/db-restore.sh",
     "db:local:restore": "./files/db-restore.sh --isLocal",
-    "api:kill": "lsof -ti tcp:3333 | xargs kill -9",
+    "api:kill": "lsof -ti tcp:3000 | xargs kill -9",
     "api:start:orig": "HTTPS_SERVE=true nx serve api",
     "api:start": "yarn api:kill && yarn api:start:orig",
     "api:lint": "nx lint api --skipNxCache",

@@ -2,7 +2,7 @@ import type { Address } from 'viem';
 
 import { AddressFindOneResultMetaT } from '@define/common/types';
 
-import { AddressModuleKeyT } from '../constants';
+import { AddressModuleKeyT } from './address-modules.keys';
 
 export type AddressModulesChainCtxT = AddressFindOneResultMetaT;
 

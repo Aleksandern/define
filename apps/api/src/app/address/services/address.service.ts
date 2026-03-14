@@ -15,35 +15,33 @@ import {
 
 import { ChainsService } from '@appApi/app/chains/services';
 
-import { ADDRESS_MODULES } from '../constants';
 import {
-  AddressAaveHfModule,
-  AddressAssetResolveModule,
+  ADDRESS_MODULES,
+  AddressActivityModule,
+  // AddressAaveHfModule,
+  // AddressAssetResolveModule,
   AddressChainActivityModule,
-  AddressErc20ActivityModule,
-  AddressNativeBalanceModule,
-  AddressProtocolDiscoveryModule,
-  AddressScanModule,
-} from '../modules';
-import {
+  AddressModulesChainCtxT,
+  // AddressErc20ActivityModule,
+  // AddressNativeBalanceModule,
+  // AddressProtocolDiscoveryModule,
+  // AddressScanModule,
   AddressModulesPipelineT,
   runModulesForChainPipeline,
-} from '../runners';
-import {
-  AddressModulesChainCtxT,
-} from '../types';
+} from '../modules';
 
 @Injectable()
 export class AddressService {
   constructor(
     private readonly chainsService: ChainsService,
-    private readonly nativeBalanceModule: AddressNativeBalanceModule,
-    private readonly aaveHfModule: AddressAaveHfModule,
-    private readonly protocolDiscoveryModule: AddressProtocolDiscoveryModule,
+    // private readonly nativeBalanceModule: AddressNativeBalanceModule,
+    // private readonly aaveHfModule: AddressAaveHfModule,
+    // private readonly protocolDiscoveryModule: AddressProtocolDiscoveryModule,
     private readonly chainActivityModule: AddressChainActivityModule,
-    private readonly erc20ActivityModule: AddressErc20ActivityModule,
-    private readonly scanModule: AddressScanModule,
-    private readonly assetResolveModule: AddressAssetResolveModule,
+    private readonly addressActivityModule: AddressActivityModule,
+    // private readonly erc20ActivityModule: AddressErc20ActivityModule,
+    // private readonly scanModule: AddressScanModule,
+    // private readonly assetResolveModule: AddressAssetResolveModule,
   ) {}
 
   async findOne({
@@ -103,8 +101,9 @@ export class AddressService {
 
     const pipeline: AddressModulesPipelineT = [
       this.chainActivityModule,
-      this.scanModule,
-      this.assetResolveModule,
+      this.addressActivityModule,
+      // this.scanModule,
+      // this.assetResolveModule,
       // this.erc20ActivityModule,
       // this.nativeBalanceModule,
       // this.aaveHfModule,

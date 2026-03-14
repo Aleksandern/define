@@ -16,9 +16,13 @@ import { RpcModule } from './rpc/rpc.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
+const environment = process.env.NODE_ENV ?? 'development';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
+      envFilePath: `.env.${environment}`,
+      ignoreEnvFile: (environment === 'production'),
       load: [configEnv],
       isGlobal: true,
     }),

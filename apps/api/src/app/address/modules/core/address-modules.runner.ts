@@ -1,12 +1,12 @@
 import type { Address } from 'viem';
 
-import { ADDRESS_MODULES } from '../constants/address.modules.keys';
+import { ADDRESS_MODULES } from './address-modules.keys';
 import type {
   AddressModuleResultT,
   AddressModulesChainCtxT,
   AddressModulesRunCtxT,
   AddressModuleT,
-} from '../types';
+} from './address-modules.types';
 
 export type AddressModuleStepT = AddressModuleT | AddressModuleT[];
 export type AddressModulesPipelineT = AddressModuleStepT[];

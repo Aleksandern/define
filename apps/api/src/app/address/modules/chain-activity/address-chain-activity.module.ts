@@ -4,13 +4,13 @@ import type { Address } from 'viem';
 
 import { RpcClientFactory } from '@appApi/app/rpc/rpc-client.factory';
 
-import { ADDRESS_MODULES } from '../constants/address.modules.keys';
-import type {
+import { ADDRESS_MODULES } from '../core/address-modules.keys';
+import {
   AddressModuleResultT,
   AddressModulesChainCtxT,
   AddressModulesRunCtxT,
   AddressModuleT,
-} from '../types';
+} from '../core/address-modules.types';
 
 export interface AddressChainActivityDataT {
   txCount: number,
