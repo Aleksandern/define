@@ -35,18 +35,14 @@ export class AddressTouchedContractsModule implements AddressModuleT {
       return null;
     }
 
-    const contractsSet = new Set<string>();
-
-    activity.touchedContracts.forEach((contract) => {
-      contractsSet.add(contract.toLowerCase());
-    });
+    const contracts = activity.touchedContracts;
 
     return {
       key: this.key,
       chain,
       status: 'ok',
       data: {
-        contracts: Array.from(contractsSet) as Address[],
+        contracts,
       },
     };
   }

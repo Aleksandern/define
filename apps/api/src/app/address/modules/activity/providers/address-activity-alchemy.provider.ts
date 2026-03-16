@@ -72,8 +72,10 @@ interface RpcJsonErrorT {
   error: unknown,
 }
 
-type RpcJsonRespT<T> = | RpcJsonSuccessT<T>
-  | RpcJsonErrorT;
+type RpcJsonRespT<T> = (
+  | RpcJsonSuccessT<T>
+  | RpcJsonErrorT
+);
 
 function hasRpcError<T>(data: RpcJsonRespT<T>): data is RpcJsonErrorT {
   return 'error' in data;

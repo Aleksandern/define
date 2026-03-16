@@ -33,7 +33,7 @@ export async function runModulesForChainPipeline({
   chain: AddressModulesChainCtxT,
   pipeline: AddressModulesPipelineT,
 }): Promise<AddressModuleResultT[]> {
-  const ctx: AddressModulesRunCtxT = { data: {} };
+  const ctx: AddressModulesRunCtxT = { data: {} } as AddressModulesRunCtxT;
 
   const state = await pipeline.reduce<Promise<RunnerState>>(async (prevPromise, step) => {
     const prev = await prevPromise;
@@ -53,8 +53,12 @@ export async function runModulesForChainPipeline({
     );
 
     out.forEach((r) => {
-      if (!r) return;
+      if (!r) {
+        return;
+      }
+
       ctx.data[r.key] = r.data;
+
       prev.results.push(r);
     });
 
@@ -82,7 +86,7 @@ export async function runModulesForChain({
   chain: AddressModulesChainCtxT,
   modules: AddressModuleT[],
 }): Promise<AddressModuleResultT[]> {
-  const ctx: AddressModulesRunCtxT = { data: {} };
+  const ctx: AddressModulesRunCtxT = { data: {} } as AddressModulesRunCtxT;
 
   const state = await modules.reduce(
     async (prevPromise, mod) => {
@@ -113,6 +117,7 @@ export async function runModulesForChain({
       }
 
       ctx.data[mod.key] = r.data;
+
       prev.results.push(r);
 
       if (mod.key === ADDRESS_MODULES.chainActivity) {

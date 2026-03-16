@@ -9,7 +9,7 @@ export type AddressModulesChainCtxT = AddressFindOneResultMetaT;
 export type AddressModuleStatusT = 'ok' | 'error';
 
 export interface AddressModuleResultT<T = unknown> {
-  key: string, // 'nativeBalance' | 'erc20Balances' | 'aaveHf' ...
+  key: AddressModuleKeyT, // 'nativeBalance' | 'erc20Balances' | 'aaveHf' ...
   chain: AddressModulesChainCtxT,
   data?: T,
   status: AddressModuleStatusT,
@@ -18,7 +18,7 @@ export interface AddressModuleResultT<T = unknown> {
 
 export interface AddressModulesRunCtxT {
   // data of modules by key
-  data: Record<string, unknown>,
+  data: Record<AddressModuleKeyT, unknown>,
 }
 
 export interface AddressModuleT {
@@ -31,3 +31,11 @@ export interface AddressModuleT {
     ctx: AddressModulesRunCtxT,
   }): Promise<AddressModuleResultT | null>,
 }
+
+export type AddressKindT = (
+  | 'erc20'
+  | 'erc721'
+  | 'erc1155'
+  | 'contract'
+  | 'unknown'
+);
