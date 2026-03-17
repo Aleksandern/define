@@ -4,3 +4,5 @@ export * from './common/dbTypes';
 export * from './db/addressTypes';
 export * from './db/chainsRpcTypes';
 export * from './db/chainsTypes';
+export * from './db/protocolsContractTypes';
+export * from './db/protocolTypes';
