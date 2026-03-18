@@ -114,4 +114,24 @@ export class ChainsService {
 
     return res;
   }
+
+  async findOneBySearchKey(params: {
+    searchKey: string,
+  }) {
+    const normalized = params.searchKey
+      .trim()
+      .toLowerCase()
+      .replace(/[()]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+    const res = await this.chainModel.findOne({
+      searchKeys: normalized,
+      isDisabled: {
+        $ne: true,
+      },
+    }).lean();
+
+    return res;
+  }
 }

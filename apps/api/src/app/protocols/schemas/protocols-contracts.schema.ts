@@ -17,6 +17,8 @@ import {
 
 import { SchemaTimestampsConfig } from '@appApi/types';
 
+import { Chain } from '@appApi/app/chains/schemas';
+
 import { Protocol } from './protocols.schema';
 
 export type ProtocolsContractDocument = ProtocolsContract & Document<Types.ObjectId> & SchemaTimestampsConfig;
@@ -43,6 +45,14 @@ export class ProtocolsContract implements ProtocolsContractSchemaT {
     lowercase: true,
   })
   protocolKey: ProtocolsContractSchemaT['protocolKey'];
+
+  @Prop({
+    type: Types.ObjectId,
+    ref: Chain.name,
+    required: true,
+    index: true,
+  })
+  chainId: ProtocolsContractSchemaT['chainId'];
 
   @Prop({
     type: Number,

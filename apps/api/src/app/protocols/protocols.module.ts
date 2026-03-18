@@ -3,6 +3,8 @@ import {
 } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
+import { ChainsModule } from '../chains/chains.module';
+
 import {
   ProtocolsController,
 } from './controllers';
@@ -32,6 +34,7 @@ import {
     ProtocolsController,
   ],
   imports: [
+    ChainsModule,
     MongooseModule.forFeature([
       {
         name: Protocol.name,

@@ -7,7 +7,6 @@ import type {
   AggregatePaginateModel,
   AnyBulkWriteOperation,
   PipelineStage,
-  Types,
 } from 'mongoose';
 import type {
   Address,

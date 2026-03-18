@@ -46,6 +46,23 @@ export class Chain implements ChainSchemaT {
   @Prop({
     required: true,
     type: String,
+    // index: true,
+    lowercase: true,
+    trim: true,
+  })
+  key: ChainSchemaT['key'];
+
+  @Prop({
+    required: false,
+    type: [String],
+    default: [],
+    // index: true,
+  })
+  searchKeys: ChainSchemaT['searchKeys'];
+
+  @Prop({
+    required: true,
+    type: String,
   })
   infoUrl: ChainSchemaT['infoUrl'];
 
@@ -67,6 +84,22 @@ export class Chain implements ChainSchemaT {
 }
 
 const schema = SchemaFactory.createForClass(Chain);
+
+schema.index({
+  chainIdOrig: 1,
+}, {
+  unique: true,
+});
+
+schema.index({
+  key: 1,
+}, {
+  unique: true,
+});
+
+schema.index({
+  searchKeys: 1,
+});
 
 schema.plugin(aggregatePaginate);
 

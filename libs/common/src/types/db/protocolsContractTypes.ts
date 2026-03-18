@@ -6,7 +6,7 @@ export interface ProtocolsContractT<SRV extends boolean = false> {
   _id: SRV extends true ? Types.ObjectId : string,
   createdAt: SRV extends true ? Date : string,
   updatedAt: SRV extends true ? Date : string,
-  protocolId: string, // FK -> protocols.id
+  protocolId: SRV extends true ? Types.ObjectId : string, // FK -> protocols.id
   protocolKey: string,
   chainId: SRV extends true ? Types.ObjectId : string, // chainId in the database
   chainIdOrig: number,

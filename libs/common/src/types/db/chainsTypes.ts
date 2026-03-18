@@ -9,6 +9,8 @@ export interface ChainT<SRV extends boolean = false> {
   chainIdOrig: number, // chainId in chainlist
   name: string,
   nameShort: string,
+  key: string,
+  searchKeys: string[],
   infoUrl: string,
   isDisabled?: boolean,
   nativeCurrency: {
