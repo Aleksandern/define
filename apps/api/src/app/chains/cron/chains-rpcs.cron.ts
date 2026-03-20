@@ -6,7 +6,6 @@ import {
   Cron,
   CronExpression,
   Timeout,
-  // Timeout,
 } from '@nestjs/schedule';
 
 import axios from 'axios';
@@ -269,7 +268,7 @@ export class ChainsRpcsCron {
 
   @Timeout(1000)
   async startup() {
-    await this.fetchChain();
+    // await this.fetchChain();
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)

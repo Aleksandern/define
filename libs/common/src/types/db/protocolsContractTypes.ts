@@ -2,6 +2,8 @@ import { Types } from 'mongoose';
 
 import { OmitStrict } from '../common/commonTypes';
 
+import { ProtocolSourceP } from './protocolTypes';
+
 export interface ProtocolsContractT<SRV extends boolean = false> {
   _id: SRV extends true ? Types.ObjectId : string,
   createdAt: SRV extends true ? Date : string,
@@ -14,7 +16,7 @@ export interface ProtocolsContractT<SRV extends boolean = false> {
   role?: string, // pool / router / factory / vault / oracle / token
   isProxy?: boolean,
   implementationAddress?: string,
-  source: 'defillama' | 'manual' | 'aave_address_book',
+  source: ProtocolSourceP,
   sourceRef?: string,
   confidence: number, // 0..100
   firstSeenAt?: Date,

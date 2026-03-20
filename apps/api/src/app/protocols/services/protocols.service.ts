@@ -52,8 +52,8 @@ export class ProtocolsService {
         },
       },
       {
+        returnDocument: 'after',
         upsert: true,
-        new: true,
         setDefaultsOnInsert: true,
       },
     );

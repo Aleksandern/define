@@ -45,26 +45,18 @@ export class ProtocolsSourceSyncService {
       })),
     );
 
-    console.log('!!!', { payloads });
-
     const merged = this.mergePayloads({
       payloads,
     });
-
-    console.log('!!!', { merged });
 
     const protocolIdByKey = await this.upsertProtocols({
       items: merged.protocols,
     });
 
-    console.log('!!!', { protocolIdByKey });
-
     const contractsToSave = this.buildContractsToSave({
       items: merged.contracts,
       protocolIdByKey,
     });
-
-    console.log('!!!', { contractsToSave });
 
     await this.protocolsContractsService.bulkUpsert({
       items: contractsToSave,
@@ -159,7 +151,7 @@ export class ProtocolsSourceSyncService {
     items: ProtocolsSourceContractT[],
     protocolIdByKey: Map<string, Types.ObjectId>,
   }): (ProtocolsSourceContractT & {
-    protocolId: string,
+    protocolId: Types.ObjectId,
   })[] {
     const {
       items,
@@ -179,10 +171,10 @@ export class ProtocolsSourceSyncService {
           ...this.normalizeContract({
             item,
           }),
-          protocolId: protocolId.toString(),
+          protocolId,
         };
       })
-      .filter((item): item is ProtocolsSourceContractT & { protocolId: string } => Boolean(item));
+      .filter((item): item is ProtocolsSourceContractT & { protocolId: Types.ObjectId } => Boolean(item));
   }
 
   private normalizeContract(params: {
@@ -221,9 +213,9 @@ export class ProtocolsSourceSyncService {
     });
 
     /**
-     * Простая стратегия:
-     * - оставляем запись с большим confidence
-     * - если confidence одинаковый, prefer current
+     * Simple strategy:
+     * - keep the record with higher confidence
+     * - if confidence is the same, prefer current
      */
     const currentConfidence = currentNorm.confidence ?? 0;
     const nextConfidence = nextNorm.confidence ?? 0;
@@ -258,25 +250,12 @@ export class ProtocolsSourceSyncService {
       item,
     } = params;
 
-    /**
-     * Здесь не придумываем новые поля.
-     * Используем то, что реально есть в твоём ProtocolsContractCreateSrvT.
-     *
-     * Приоритет:
-     * 1. chainIdOrig
-     * 2. chainId
-     * 3. idChain
-     */
-    if ('chainIdOrig' in item && typeof item.chainIdOrig === 'number') {
+    if (typeof item.chainIdOrig === 'number') {
       return String(item.chainIdOrig);
     }
 
-    if ('chainId' in item && typeof item.chainId === 'string') {
-      return item.chainId;
-    }
-
-    if ('idChain' in item && typeof item.idChain === 'string') {
-      return item.idChain;
+    if (item.chainId) {
+      return String(item.chainId);
     }
 
     return 'unknown-chain';

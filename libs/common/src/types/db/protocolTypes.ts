@@ -5,7 +5,7 @@ import { OmitStrict } from '../common/commonTypes';
 export enum ProtocolSourceP {
   defillama = 'defillama',
   manual = 'manual',
-  aave_address_book = 'aave_address_book',
+  aaveAddressBook = 'aaveAddressBook',
 }
 
 export interface ProtocolT<SRV extends boolean = false> {

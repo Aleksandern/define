@@ -9,6 +9,12 @@ import type {
 } from 'mongoose';
 
 import { ChainSrvT } from '@define/common/types';
+import { tk } from '@define/common/utils';
+
+import {
+ QueryFilterT,
+RootFilterOperatorsT 
+} from '@appApi/types';
 
 import { ChainsAggregate } from '../aggrs';
 import {
@@ -130,6 +136,42 @@ export class ChainsService {
       isDisabled: {
         $ne: true,
       },
+    }).lean();
+
+    return res;
+  }
+
+  async findOneBy({
+    searchKey,
+    chainIdOrig,
+  }: {
+    searchKey?: string,
+    chainIdOrig?: number,
+  }) {
+    const matchAnd: QueryFilterT<ChainDocument> = {};
+
+    if (searchKey) {
+      const searchKeyNormalized = searchKey
+        .trim()
+        .toLowerCase()
+        .replace(/[()]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
+      matchAnd.searchKeys = searchKeyNormalized;
+    }
+
+    if (chainIdOrig) {
+      matchAnd.chainIdOrig = chainIdOrig;
+    }
+
+    if (tk.isEmpty(matchAnd)) {
+      throw new Error('At least one of searchKey or chainIdOrig must be provided');
+    }
+
+    const res = await this.chainModel.findOne({
+      ...matchAnd,
+      isDisabled: { $ne: true },
     }).lean();
 
     return res;

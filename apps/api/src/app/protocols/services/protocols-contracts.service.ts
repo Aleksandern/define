@@ -47,6 +47,7 @@ export class ProtocolsContractsService {
     const ops: AnyBulkWriteOperation<ProtocolsContractDocument>[] = items.map((item) => ({
       updateOne: {
         filter: {
+          protocolId: item.protocolId,
           chainIdOrig: item.chainIdOrig,
           address: item.address.toLowerCase(),
         },
@@ -55,6 +56,7 @@ export class ProtocolsContractsService {
             protocolId: item.protocolId,
             protocolKey: item.protocolKey.toLowerCase(),
             chainIdOrig: item.chainIdOrig,
+            chainId: item.chainId,
             address: item.address.toLowerCase(),
             role: item.role?.toLowerCase(),
             isProxy: item.isProxy ?? false,

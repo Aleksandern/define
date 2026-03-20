@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import {
+  Cron,
+  CronExpression,
   Timeout,
 } from '@nestjs/schedule';
 
@@ -153,9 +155,10 @@ export class ChainsRpcsHealthCron {
 
   @Timeout(1000)
   async startup() {
-    await this.runHealthCheck();
+    // await this.runHealthCheck();
   }
 
+  @Cron(CronExpression.EVERY_DAY_AT_1AM)
   async runHealthCheck() {
     const dateNowLib = dateTimeUtils.getLib();
     const dateNow = dateNowLib.clone().toDate();

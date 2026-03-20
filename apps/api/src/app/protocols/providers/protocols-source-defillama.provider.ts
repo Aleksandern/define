@@ -9,6 +9,7 @@ import {
   ProtocolSourceP,
 } from '@define/common/types';
 
+import { LoggerService } from '@appApi/services';
 import { dbUtils } from '@appApi/utils';
 
 import { ChainsService } from '@appApi/app/chains/services';
@@ -41,8 +42,41 @@ interface ResolvedChainT {
   chainIdOrig: number,
 }
 
+/**
+ * TODO (DefiLlama adapters sync):
+ *
+ * Currently using direct mapping:
+ *   slug (api.llama.fi/protocols) → GitHub adapters folder (/projects/{slug})
+ *
+ * But this is NOT guaranteed:
+ *   - not all protocols have adapters
+ *   - slug !== folder name (e.g.: binance-cex)
+ *
+ * As a result:
+ *   - some protocols are skipped (contracts = [])
+ *   - unnecessary 404 requests to GitHub
+ *   - possible rate limit issues
+ *
+ * Needs improvement:
+ *
+ * 1. Add cache of adapters list:
+ *    GET https://api.github.com/repos/DefiLlama/DefiLlama-Adapters/contents/projects
+ *    → check slug existence before request
+ *
+ * 2. Add slug overrides (manual mapping):
+ *    example:
+ *      'binance-cex' → 'binance'
+ *
+ * 3. Future improvements:
+ *    - multi-source contracts (not just adapters)
+ *    - fallback via on-chain detection (touched contracts)
+ *
+ * This is critical for protocol registry completeness.
+ */
 @Injectable()
 export class ProtocolsSourceDefiLlamaProvider implements ProtocolsSourceProviderT {
+  private readonly logger = new LoggerService(ProtocolsSourceDefiLlamaProvider.name);
+
   readonly source = ProtocolSourceP.defillama;
 
   private readonly llamaProtocolsUrl = 'https://api.llama.fi/protocols';
@@ -51,6 +85,7 @@ export class ProtocolsSourceDefiLlamaProvider implements ProtocolsSourceProvider
 
   private readonly githubHeaders = {
     Accept: 'application/vnd.github+json',
+    Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
   };
 
   private readonly protocolsConcurrency = 5;
@@ -227,8 +262,27 @@ export class ProtocolsSourceDefiLlamaProvider implements ProtocolsSourceProvider
           }
         })),
       );
-    } catch {
-      //
+    } catch (e) {
+      let messageErr = 'walkGithubDir error: ';
+
+      if (e instanceof axios.AxiosError) {
+        const data = e.response?.data as Record<string, any>;
+
+        if (data?.message) {
+          messageErr += `${data.message}`;
+        }
+
+        if (e.config?.url) {
+          messageErr += ` ${e.config.url}`;
+        }
+      } else {
+        messageErr += (e as Error).message;
+      }
+
+      this.logger.error({
+        message: messageErr,
+        stack: (e as Error).stack,
+      });
     }
   }
 

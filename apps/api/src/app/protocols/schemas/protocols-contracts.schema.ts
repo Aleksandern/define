@@ -64,7 +64,6 @@ export class ProtocolsContract implements ProtocolsContractSchemaT {
   @Prop({
     type: String,
     required: true,
-    unique: true,
     index: true,
     trim: true,
     lowercase: true,
@@ -130,6 +129,15 @@ export class ProtocolsContract implements ProtocolsContractSchemaT {
 }
 
 const schema = SchemaFactory.createForClass(ProtocolsContract);
+
+schema.index(
+  {
+    protocolId: 1,
+    chainIdOrig: 1,
+    address: 1,
+  },
+  { unique: true },
+);
 
 schema.plugin(aggregatePaginate);
 
