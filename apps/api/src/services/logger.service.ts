@@ -25,7 +25,11 @@ export class LoggerService extends Logger implements LoggerServiceOrig {
     context?: string,
     stack?: string,
   }) {
-    super.error(message, stack, context);
+    if (context) {
+      super.error(message, stack, context);
+    } else {
+      super.error(message, stack);
+    }
   }
 
   override warn(message: string) {

@@ -9,7 +9,10 @@ import {
   ProtocolsController,
 } from './controllers';
 import { ProtocolsContractsCron } from './cron';
-import { ProtocolsSourceDefiLlamaProvider } from './providers';
+import {
+  ProtocolsSourceAaveAddressBookProvider,
+  ProtocolsSourceDefiLlamaProvider,
+} from './providers';
 import {
   Protocol,
   ProtocolSchema,
@@ -28,6 +31,7 @@ import {
     ProtocolsContractsService,
     ProtocolsSourceSyncService,
     ProtocolsSourceDefiLlamaProvider,
+    ProtocolsSourceAaveAddressBookProvider,
     ProtocolsContractsCron,
   ],
   controllers: [

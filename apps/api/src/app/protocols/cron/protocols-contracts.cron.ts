@@ -17,7 +17,7 @@ export class ProtocolsContractsCron {
 
   @Timeout(1000)
   async startup() {
-    // await this.syncDaily();
+    await this.syncDaily();
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
