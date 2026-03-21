@@ -1,8 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+} from '@nestjs/common';
 
 import type { Address } from 'viem';
 
-import { getAaveV3MarketsByChainId } from '@appApi/chains/aave';
+import type {
+  ProtocolsContractSrvT,
+} from '@define/common/types';
+
+import {
+  ProtocolsContractsService,
+} from '@appApi/app/protocols/services';
 
 import type {
   AddressContractsInfoDataT,
@@ -13,15 +21,18 @@ import type {
   AddressModuleT,
 } from '../core/address-modules.types';
 
-import {
-  ProtocolRegistryService,
-} from './protocol-registry.service';
-import type {
-  ProtocolResolveItemT,
-} from './protocol-registry.types';
+export interface AddressProtocolResolveItemT {
+  protocolId: string,
+  protocolKey: string,
+  protocolName?: string,
+  contracts: Address[],
+  contractRoles: string[],
+  matchedRowsCount: number,
+  matches: ProtocolsContractSrvT[],
+}
 
 export interface AddressProtocolResolveDataT {
-  items: ProtocolResolveItemT[],
+  items: AddressProtocolResolveItemT[],
   protocolKeys: string[],
 }
 
@@ -31,7 +42,9 @@ export class AddressProtocolResolveModule implements AddressModuleT {
 
   requires = [ADDRESS_MODULES.addressContractsInfo];
 
-  private readonly protocolRegistryService = new ProtocolRegistryService();
+  constructor(
+    private readonly protocolsContractsService: ProtocolsContractsService,
+  ) {}
 
   async run(
     params: Parameters<AddressModuleT['run']>[0],
@@ -47,60 +60,87 @@ export class AddressProtocolResolveModule implements AddressModuleT {
       return null;
     }
 
-    const matches = await this.protocolRegistryService.findByContracts({
-      chainIdOrig: chain.chainIdOrig,
-      contracts: contractsInfo.protocolContractCandidates,
-    });
+    if (contractsInfo.protocolContractCandidates.length === 0) {
+      return {
+        key: this.key,
+        chain,
+        status: 'ok',
+        data: {
+          items: [],
+          protocolKeys: [],
+        },
+      };
+    }
 
-    const aaveMarkets = getAaveV3MarketsByChainId({
-      chainIdOrig: params.chain.chainIdOrig,
+    const matches = await this.protocolsContractsService.findBy({
+      query: {
+        chainIdOrig: chain.chainIdOrig,
+        address: contractsInfo.protocolContractCandidates,
+      },
     });
-
-    console.log('!!!', { aaveMarkets });
 
     const grouped = new Map<string, {
+      protocolId: string,
       protocolKey: string,
-      protocolName: string,
-      contracts: Set<string>,
+      protocolName?: string,
+      contracts: Set<Address>,
       contractRoles: Set<string>,
+      matches: ProtocolsContractSrvT[],
     }>();
 
     matches.forEach((match) => {
-      if (!grouped.has(match.protocolKey)) {
-        grouped.set(match.protocolKey, {
-          protocolKey: match.protocolKey,
-          protocolName: match.protocolName,
-          contracts: new Set<string>(),
-          contractRoles: new Set<string>(),
-        });
-      }
+      const protocolId = String(match.protocolId);
+      const existing = grouped.get(protocolId);
 
-      const item = grouped.get(match.protocolKey);
+      if (existing) {
+        existing.contracts.add(match.address as Address);
 
-      if (!item) {
+        if (match.role) {
+          existing.contractRoles.add(match.role);
+        }
+
+        if (!existing.protocolName && match.protocol?.name) {
+          existing.protocolName = match.protocol.name;
+        }
+
+        existing.matches.push(match);
+
         return;
       }
 
-      item.contracts.add(match.contractAddress.toLowerCase());
+      const contracts = new Set<Address>([
+        match.address as Address,
+      ]);
+      const contractRoles = new Set<string>();
 
-      if (match.contractRole) {
-        item.contractRoles.add(match.contractRole);
+      if (match.role) {
+        contractRoles.add(match.role);
       }
+
+      grouped.set(protocolId, {
+        protocolId,
+        protocolKey: match.protocolKey,
+        protocolName: match.protocol?.name,
+        contracts,
+        contractRoles,
+        matches: [match],
+      });
     });
 
-    const items: ProtocolResolveItemT[] = Array.from(grouped.values()).map((item) => ({
+    const items: AddressProtocolResolveItemT[] = [...grouped.values()].map((item) => ({
+      protocolId: item.protocolId,
       protocolKey: item.protocolKey,
       protocolName: item.protocolName,
-      contracts: Array.from(item.contracts) as Address[],
-      contractRoles: Array.from(item.contractRoles),
+      contracts: [...item.contracts],
+      contractRoles: [...item.contractRoles],
+      matchedRowsCount: item.matches.length,
+      matches: item.matches,
     }));
 
     const data = {
       items,
       protocolKeys: items.map((item) => item.protocolKey),
     };
-
-    console.log('!!!resolve', { data });
 
     return {
       key: this.key,

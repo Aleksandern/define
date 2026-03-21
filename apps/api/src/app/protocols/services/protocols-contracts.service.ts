@@ -80,30 +80,45 @@ export class ProtocolsContractsService {
   }
 
   async findBy({
-    chainIdOrig,
-    contracts,
+    query,
   }: {
-    chainIdOrig: number,
-    contracts: Address[],
+    query: {
+      chainIdOrig?: number,
+      address?: Address[],
+    },
   }): Promise<ProtocolsContractSrvT[]> {
-    if (contracts.length === 0) {
-      return [];
-    }
+    const {
+      chainIdOrig,
+      address,
+    } = query;
 
     const protocolsContractsAggregate = new ProtocolsContractsAggregate();
-    const matchAnd: PipelineStage.Match['$match'][] = [
-      {
+    const matchAnd: PipelineStage.Match['$match'][] = [];
+
+    if (chainIdOrig) {
+      matchAnd.push({
         chainIdOrig,
-      },
-      {
+      });
+    }
+
+    if (
+      address
+      && (address.length > 0)
+    ) {
+      const normalizedAddress = [...new Set(
+        address.map((contract) => contract.toLowerCase()),
+      )];
+
+      matchAnd.push({
         address: {
-          $in: contracts.map((v) => v.toLowerCase()),
+          $in: normalizedAddress,
         },
-      },
-      {
-        isDisabled: { $ne: true },
-      },
-    ];
+      });
+    }
+
+    matchAnd.push({
+      isDisabled: { $ne: true },
+    });
 
     const aggregate: PipelineStage[] = [
       {

@@ -4,6 +4,7 @@ export const ADDRESS_MODULES = {
   addressTouchedContracts: 'addressTouchedContracts',
   addressContractsInfo: 'addressContractsInfo',
   addressProtocolResolve: 'addressProtocolResolve',
+  addressTokensResolve: 'addressTokensResolve',
   nativeBalance: 'nativeBalance',
 } as const;
 

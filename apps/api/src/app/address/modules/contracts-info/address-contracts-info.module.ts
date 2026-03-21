@@ -169,7 +169,6 @@ export class AddressContractsInfoModule implements AddressModuleT {
     );
 
     const tokenContracts = items
-
       .filter((item) => item.kind === 'erc20')
       .map((item) => item.address);
 
@@ -187,6 +186,7 @@ export class AddressContractsInfoModule implements AddressModuleT {
       nftContracts,
       protocolContractCandidates,
     };
+    console.log('!!!info', { data });
 
     return {
       key: this.key,

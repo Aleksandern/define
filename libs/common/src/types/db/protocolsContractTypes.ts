@@ -1,8 +1,12 @@
 import { Types } from 'mongoose';
+import { Address } from 'viem';
 
 import { OmitStrict } from '../common/commonTypes';
 
-import { ProtocolSourceP } from './protocolTypes';
+import {
+  ProtocolSourceP,
+  ProtocolT,
+} from './protocolTypes';
 
 export interface ProtocolsContractT<SRV extends boolean = false> {
   _id: SRV extends true ? Types.ObjectId : string,
@@ -10,6 +14,7 @@ export interface ProtocolsContractT<SRV extends boolean = false> {
   updatedAt: SRV extends true ? Date : string,
   protocolId: SRV extends true ? Types.ObjectId : string, // FK -> protocols.id
   protocolKey: string,
+  protocol?: ProtocolT<SRV>,
   chainId: SRV extends true ? Types.ObjectId : string, // chainId in the database
   chainIdOrig: number,
   address: string, // lowercase
@@ -29,6 +34,7 @@ export type ProtocolsContractExcludeSrvT = OmitStrict<ProtocolsContractSrvT,
 '_id'
 | 'updatedAt'
 | 'createdAt'
+| 'protocol'
 >;
 
 export type ProtocolsContractSchemaT = Required<ProtocolsContractExcludeSrvT>;

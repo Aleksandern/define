@@ -3,6 +3,7 @@ import {
 } from '@nestjs/common';
 
 import { ChainsModule } from '../chains/chains.module';
+import { ProtocolsModule } from '../protocols/protocols.module';
 import { RpcModule } from '../rpc/rpc.module';
 
 import { AddressController } from './controllers';
@@ -42,6 +43,7 @@ import { AddressService } from './services';
   imports: [
     RpcModule,
     ChainsModule,
+    ProtocolsModule,
   ],
   exports: [
     AddressService,
